@@ -768,20 +768,48 @@
   // 場所を変えたいときはこの2つの数字を変更(初期値:三鷹)
   const WEATHER_LAT = 35.6836;
   const WEATHER_LON = 139.5595;
-  let weatherByDate = null; // {iso: {code,tmax,tmin,rain}}
+  let weatherByDate = null; // {iso: {code,tmax,tmin,rain}} Open-Meteo(気温用)
   let jmaPopByDate = null;  // {iso: 降水確率%(気象庁・東京地方)}
+  let jmaWxByDate = null;   // {iso: {icon,label}} 天気(気象庁・東京地方)
 
-  // 気象庁公式の降水確率(東京地方=130000)。地域を変える場合はこのコードを変更
+  // 気象庁の天気コード→アイコン/表示名(主要コード)
+  const JMA_W = {
+    100:["☀️","晴れ"],101:["🌤","晴れ時々くもり"],102:["🌦","晴れ一時雨"],103:["🌦","晴れ時々雨"],
+    104:["🌨","晴れ一時雪"],105:["🌨","晴れ時々雪"],110:["🌤","晴れのちくもり"],111:["🌤","晴れのちくもり"],
+    112:["🌦","晴れのち雨"],113:["🌦","晴れのち雨"],114:["🌦","晴れのち雨"],115:["🌨","晴れのち雪"],
+    200:["☁️","くもり"],201:["⛅","くもり時々晴れ"],202:["🌧","くもり一時雨"],203:["🌧","くもり時々雨"],
+    204:["🌨","くもり一時雪"],205:["🌨","くもり時々雪"],210:["⛅","くもりのち晴れ"],211:["⛅","くもりのち晴れ"],
+    212:["🌧","くもりのち雨"],213:["🌧","くもりのち雨"],214:["🌧","くもりのち雨"],215:["🌨","くもりのち雪"],
+    300:["🌧","雨"],301:["🌦","雨時々晴れ"],302:["🌧","雨時々やむ"],303:["🌨","雨時々雪"],
+    308:["🌀","暴風雨"],311:["🌦","雨のち晴れ"],313:["☁️","雨のちくもり"],314:["🌨","雨のち雪"],
+    400:["❄️","雪"],401:["🌨","雪時々晴れ"],402:["🌨","雪時々やむ"],403:["🌨","雪時々雨"],
+    406:["🌨","風雪強い"],411:["🌤","雪のち晴れ"],413:["☁️","雪のちくもり"],414:["🌧","雪のち雨"]
+  };
+  function jmaWxInfo(code, text){
+    const c = parseInt(code,10);
+    const hit = JMA_W[c];
+    // 公式の予報文があればそれを優先(空白を除去して整形)
+    const label = text ? String(text).replace(/[\s　]+/g,"") : (hit? hit[1] : null);
+    if(hit) return {icon:hit[0], label: label||hit[1]};
+    // 未知コードは百の位で概略判定
+    const head = Math.floor(c/100);
+    const rough = {1:["☀️","晴れ"],2:["☁️","くもり"],3:["🌧","雨"],4:["❄️","雪"]}[head];
+    if(rough) return {icon:rough[0], label: label||rough[1]};
+    return null;
+  }
+
+  // 気象庁公式の降水確率・天気(東京地方=130000)。地域を変える場合はこのコードを変更
   const JMA_AREA = "130000";
   function fetchJmaPop(){
     fetch("https://www.jma.go.jp/bosai/forecast/data/forecast/"+JMA_AREA+".json")
       .then(r=>r.json())
       .then(j=>{
         const map = {};
+        const wx = {};
         function pickArea(areas){
           return areas.find(a=>a.area && a.area.name && a.area.name.indexOf("東京")>=0) || areas[0];
         }
-        // 直近3日:6時間ごとの確率 → 日ごとの最大値
+        // 直近3日:6時間ごとの降水確率 → 日ごとの最大値
         try{
           const ts = j[0].timeSeries.find(t=>t.areas && t.areas[0] && t.areas[0].pops);
           const ar = pickArea(ts.areas);
@@ -792,18 +820,31 @@
             map[dIso] = Math.max(map[dIso]===undefined?-1:map[dIso], p);
           });
         }catch(e){}
-        // 週間予報:日ごとの確率(未取得の日だけ補完)
+        // 直近3日:天気(公式の予報文つき)
+        try{
+          const ts = j[0].timeSeries.find(t=>t.areas && t.areas[0] && t.areas[0].weatherCodes);
+          const ar = pickArea(ts.areas);
+          ts.timeDefines.forEach((td,i)=>{
+            const info = jmaWxInfo(ar.weatherCodes[i], ar.weathers && ar.weathers[i]);
+            if(info) wx[td.slice(0,10)] = info;
+          });
+        }catch(e){}
+        // 週間予報:日ごとの降水確率と天気(未取得の日だけ補完)
         try{
           const ts = j[1].timeSeries.find(t=>t.areas && t.areas[0] && t.areas[0].pops);
           const ar = pickArea(ts.areas);
           ts.timeDefines.forEach((td,i)=>{
-            const p = parseInt(ar.pops[i],10);
-            if(isNaN(p)) return;
             const dIso = td.slice(0,10);
-            if(map[dIso]===undefined) map[dIso] = p;
+            const p = parseInt(ar.pops[i],10);
+            if(!isNaN(p) && map[dIso]===undefined) map[dIso] = p;
+            if(ar.weatherCodes && wx[dIso]===undefined){
+              const info = jmaWxInfo(ar.weatherCodes[i], null);
+              if(info) wx[dIso] = info;
+            }
           });
         }catch(e){}
         jmaPopByDate = map;
+        jmaWxByDate = wx;
         renderWeather();
       })
       .catch(e=>{ /* 取得失敗時はOpen-Meteoの値を使用 */ });
@@ -850,7 +891,9 @@
     const dIso = iso(currentViewDate());
     const w = weatherByDate[dIso];
     if(!w){ card.classList.add("hidden"); hint.classList.add("hidden"); return; }
-    const info = wcodeInfo(w.code);
+    // 天気表示:気象庁の公式予報を優先、なければOpen-Meteoの推定
+    let info = wcodeInfo(w.code);
+    if(jmaWxByDate && jmaWxByDate[dIso]) info = jmaWxByDate[dIso];
     // 降水確率:気象庁の値を優先、なければOpen-Meteoの推定値
     let rain = w.rain, official = false;
     if(jmaPopByDate && jmaPopByDate[dIso]!==undefined){
