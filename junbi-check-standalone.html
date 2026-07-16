@@ -179,51 +179,6 @@
   .cal .day.blank{background:none;border:none;}
   .note{font-size:12px;color:var(--gray);margin-top:14px;line-height:1.7;}
   .hidden{display:none;}
-  /* day navigation */
-  .daynav{
-    display:flex;align-items:center;gap:8px;margin-bottom:10px;
-  }
-  .daynav button{
-    font-family:inherit;cursor:pointer;
-  }
-  #navPrev,#navNext{
-    width:44px;height:44px;border:1px solid var(--line);border-radius:10px;
-    background:#fff;color:var(--blue);font-size:16px;font-weight:800;flex-shrink:0;
-  }
-  #navPrev:focus-visible,#navNext:focus-visible,.daynav-reset:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
-  .daynav-center{flex:1;text-align:center;}
-  .daynav-date{font-size:17px;font-weight:800;}
-  .daynav-date .rel{font-size:12px;color:var(--gray);margin-left:6px;font-weight:700;}
-  .daynav-reset{
-    margin-top:2px;border:none;background:none;color:var(--blue);
-    font-size:12px;font-weight:800;text-decoration:underline;padding:2px 6px;
-  }
-  /* weather */
-  .weather{
-    background:#fff;border:1px solid var(--line);border-radius:12px;
-    padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;
-    font-size:14px;font-weight:700;
-  }
-  .weather .w-icon{font-size:22px;}
-  .weather .w-main{flex:1;}
-  .weather .w-temp{color:var(--gray);font-weight:800;margin-left:6px;}
-  .weather .w-rain{color:var(--blue);font-weight:800;}
-  .w-hint{
-    background:#EAF1FB;border:1px solid #BCD0EE;color:var(--blue);
-    border-radius:10px;padding:8px 12px;margin-bottom:8px;
-    font-size:13px;font-weight:800;
-  }
-  /* fortune */
-  .fortune{
-    background:linear-gradient(135deg,#FFFDF5,#FFF6E8);
-    border:1px solid #E8D9B8;border-radius:12px;
-    padding:10px 14px;margin-bottom:8px;
-  }
-  .fortune .f-head{display:flex;align-items:center;justify-content:space-between;}
-  .fortune .f-sign{font-size:13px;font-weight:800;color:#8A6410;}
-  .fortune .f-rank{font-size:16px;font-weight:900;color:var(--red);letter-spacing:.1em;}
-  .fortune .f-msg{font-size:13px;font-weight:700;margin-top:4px;line-height:1.5;}
-  .fortune .f-lucky{font-size:12px;color:#8A6410;font-weight:700;margin-top:4px;}
   /* backup */
   .backup-box{
     background:#fff;border:1px solid var(--line);border-radius:12px;
@@ -256,28 +211,6 @@
 <main>
   <!-- チェックタブ -->
   <section id="tab-check">
-    <div class="daynav">
-      <button type="button" id="navPrev" aria-label="前の日">◀</button>
-      <div class="daynav-center">
-        <div class="daynav-date" id="navDate"></div>
-        <button type="button" id="navReset" class="daynav-reset hidden">自動表示にもどす</button>
-      </div>
-      <button type="button" id="navNext" aria-label="次の日">▶</button>
-    </div>
-    <div class="weather hidden" id="weatherCard">
-      <span class="w-icon" id="wIcon"></span>
-      <span class="w-main"><span id="wLabel"></span> <span class="w-temp" id="wTemp"></span></span>
-      <span class="w-rain" id="wRain"></span>
-    </div>
-    <div class="w-hint hidden" id="wHint"></div>
-    <div class="fortune" id="fortuneCard">
-      <div class="f-head">
-        <span class="f-sign">♒ みずがめ座</span>
-        <span class="f-rank" id="fRank"></span>
-      </div>
-      <div class="f-msg" id="fMsg"></div>
-      <div class="f-lucky"><span id="fColor"></span> <span id="fItem"></span></div>
-    </div>
     <div class="progress-wrap">
       <div class="bar"><div id="progBar"></div></div>
       <div class="pct" id="progPct">0 / 0</div>
@@ -395,124 +328,7 @@
     const now = new Date();
     const d = new Date(now);
     if(now.getHours() >= 15) d.setDate(d.getDate()+1);
-    d.setHours(0,0,0,0);
     return d;
-  }
-  // 表示中の日付(自動 or 手動選択)
-  let viewDate = null; // null = 自動(targetDate)
-  function currentViewDate(){
-    return viewDate ? new Date(viewDate) : targetDate();
-  }
-  function shiftView(days){
-    const d = currentViewDate();
-    d.setDate(d.getDate()+days);
-    // 自動表示の日に戻ったら自動モードへ
-    viewDate = (iso(d)===iso(targetDate())) ? null : d;
-    renderCheck();
-  }
-  document.getElementById("navPrev").addEventListener("click",()=>shiftView(-1));
-  document.getElementById("navNext").addEventListener("click",()=>shiftView(1));
-  document.getElementById("navReset").addEventListener("click",()=>{ viewDate=null; renderCheck(); });
-
-  // ---------- きょうの運勢(誕生日1/27・みずがめ座) ----------
-  const BIRTH_SEED = "0127";
-  const RANKS = [
-    {name:"大吉", w:2, msgs:["なにをやってもうまくいく日。テストも発表もチャンス!","最高の一日。新しいことに挑戦してみよう!"]},
-    {name:"中吉", w:3, msgs:["調子は上々。コツコツやったことが実を結ぶ日。","友だちとの協力がラッキーを呼ぶ日。"]},
-    {name:"吉",   w:3, msgs:["おだやかな良い日。ていねいさが運を上げる。","あいさつと返事をしっかりすると良いことがあるかも。"]},
-    {name:"小吉", w:2, msgs:["まずまずの日。あわてず一つずつ片づけよう。","早めの行動が吉。準備は前の日のうちに。"]},
-    {name:"末吉", w:2, msgs:["油断は禁物の日。持ち物をもう一回チェック!","うっかりに注意。カバンの中身を指さし確認しよう。"]}
-  ];
-  const LUCKY_COLORS = ["赤","青","緑","黄色","水色","オレンジ","むらさき","白","ピンク","金色"];
-  const LUCKY_ITEMS  = ["消しゴム","赤ペン","下じき","ハンカチ","水筒","定規","付せん","シャーペン","ノート","マスキングテープ"];
-  function seededRand(str){
-    // 文字列→32bitハッシュ→擬似乱数
-    let h = 1779033703;
-    for(let i=0;i<str.length;i++){
-      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-      h = (h<<13)|(h>>>19);
-    }
-    return function(){
-      h = Math.imul(h ^ (h>>>16), 2246822507);
-      h = Math.imul(h ^ (h>>>13), 3266489909);
-      h = (h ^= h>>>16) >>> 0;
-      return h / 4294967296;
-    };
-  }
-  function renderFortune(){
-    const dIso = iso(currentViewDate());
-    const rnd = seededRand(dIso + "-" + BIRTH_SEED);
-    // 重み付きでランク抽選
-    const total = RANKS.reduce((s,r)=>s+r.w,0);
-    let pick = rnd()*total, rank = RANKS[0];
-    for(const r of RANKS){ pick -= r.w; if(pick<=0){ rank=r; break; } }
-    const msg = rank.msgs[Math.floor(rnd()*rank.msgs.length)];
-    const color = LUCKY_COLORS[Math.floor(rnd()*LUCKY_COLORS.length)];
-    const item = LUCKY_ITEMS[Math.floor(rnd()*LUCKY_ITEMS.length)];
-    document.getElementById("fRank").textContent = rank.name;
-    document.getElementById("fMsg").textContent = msg;
-    document.getElementById("fColor").textContent = "ラッキーカラー:"+color;
-    document.getElementById("fItem").textContent = "/ ラッキーアイテム:"+item;
-  }
-
-  // ---------- 天気予報(Open-Meteo・APIキー不要) ----------
-  // 場所を変えたいときはこの2つの数字を変更(初期値:三鷹)
-  const WEATHER_LAT = 35.6836;
-  const WEATHER_LON = 139.5595;
-  let weatherByDate = null; // {iso: {code,tmax,tmin,rain}}
-  const WCODE = [
-    [[0],"☀️","快晴"],
-    [[1],"🌤","晴れ"],
-    [[2],"⛅","晴れ時々くもり"],
-    [[3],"☁️","くもり"],
-    [[45,48],"🌫","霧"],
-    [[51,53,55,56,57],"🌧","霧雨"],
-    [[61,63,65,66,67],"🌧","雨"],
-    [[71,73,75,77],"❄️","雪"],
-    [[80,81,82],"🌦","にわか雨"],
-    [[85,86],"🌨","にわか雪"],
-    [[95,96,99],"⛈","雷雨"]
-  ];
-  function wcodeInfo(c){
-    for(const [codes,icon,label] of WCODE) if(codes.includes(c)) return {icon,label};
-    return {icon:"🌡",label:"—"};
-  }
-  function fetchWeather(){
-    const url = "https://api.open-meteo.com/v1/forecast?latitude="+WEATHER_LAT+"&longitude="+WEATHER_LON+
-      "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=10";
-    fetch(url).then(r=>r.json()).then(j=>{
-      if(!j.daily || !j.daily.time) return;
-      weatherByDate = {};
-      j.daily.time.forEach((t,i)=>{
-        weatherByDate[t] = {
-          code: j.daily.weathercode[i],
-          tmax: Math.round(j.daily.temperature_2m_max[i]),
-          tmin: Math.round(j.daily.temperature_2m_min[i]),
-          rain: j.daily.precipitation_probability_max[i]
-        };
-      });
-      renderWeather();
-    }).catch(e=>{ /* オフライン時などは非表示のまま */ });
-  }
-  function renderWeather(){
-    const card = document.getElementById("weatherCard");
-    const hint = document.getElementById("wHint");
-    if(!weatherByDate){ card.classList.add("hidden"); hint.classList.add("hidden"); return; }
-    const dIso = iso(currentViewDate());
-    const w = weatherByDate[dIso];
-    if(!w){ card.classList.add("hidden"); hint.classList.add("hidden"); return; }
-    const info = wcodeInfo(w.code);
-    document.getElementById("wIcon").textContent = info.icon;
-    document.getElementById("wLabel").textContent = info.label;
-    document.getElementById("wTemp").textContent = w.tmax+"℃ / "+w.tmin+"℃";
-    document.getElementById("wRain").textContent = "☔"+(w.rain==null?"—":w.rain+"%");
-    card.classList.remove("hidden");
-    if(w.rain!=null && w.rain>=50){
-      hint.textContent = "☔ 降水確率"+w.rain+"% — かさを忘れずに!";
-      hint.classList.remove("hidden");
-    }else{
-      hint.classList.add("hidden");
-    }
   }
   function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 
@@ -538,24 +354,8 @@
   }
 
   function renderCheck(){
-    const d = currentViewDate();
+    const d = targetDate();
     const dIso = iso(d);
-    const auto = iso(targetDate());
-    // 日付ナビの表示
-    const todayIso = iso(new Date(new Date().setHours(0,0,0,0)));
-    let rel = "";
-    if(dIso===todayIso) rel = "きょう";
-    else{
-      const diff = Math.round((new Date(dIso) - new Date(todayIso)) / 86400000);
-      if(diff===1) rel = "あす";
-      else if(diff===2) rel = "あさって";
-      else if(diff===-1) rel = "きのう";
-    }
-    document.getElementById("navDate").innerHTML =
-      (d.getMonth()+1)+"/"+d.getDate()+"("+DOW[d.getDay()]+")" + (rel? '<span class="rel">'+rel+'</span>':'');
-    document.getElementById("navReset").classList.toggle("hidden", dIso===auto);
-    renderWeather();
-    renderFortune();
     document.getElementById("dateLabel").textContent = (d.getMonth()+1)+"/"+d.getDate()+"("+DOW[d.getDay()]+")";
     document.getElementById("dowLabel").textContent = DOW[d.getDay()]+"曜日の持ち物";
     const checks = data.checks[dIso] || {};
@@ -817,7 +617,6 @@
   // ---------- init ----------
   load();
   renderCheck(); renderSubs(); renderSettings(); renderRecord();
-  fetchWeather();
 })();
 </script>
 </body>
