@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2B4C9B">
+<title>あす準備チェック</title>
+<style>
+  :root{
+    --paper:#FAFAF7;
+    --line:#D8E0F0;
+    --ink:#1B1F2A;
+    --blue:#2B4C9B;
+    --red:#C8322B;
+    --gray:#8A8F98;
+    --done:#EAF3EA;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Hiragino Maru Gothic ProN","BIZ UDGothic","Yu Gothic",system-ui,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    background-image:repeating-linear-gradient(
+      to bottom, transparent 0, transparent 31px, var(--line) 31px, var(--line) 32px);
+    display:flex;flex-direction:column;
+    max-width:520px;margin:0 auto;
+    min-height:100dvh;
+  }
+  header{
+    padding:18px 20px 10px;
+    border-bottom:2px solid var(--blue);
+    background:var(--paper);
+    position:sticky;top:0;z-index:10;
+  }
+  .eyebrow{font-size:12px;color:var(--blue);letter-spacing:.15em;font-weight:700;}
+  h1{font-size:22px;font-weight:800;}
+  h1 .date{font-size:14px;color:var(--gray);font-weight:600;margin-left:8px;}
+  .trial-banner{
+    background:#FFF4E0;border:1px solid #E8C87A;color:#8A6410;
+    font-size:12px;font-weight:700;padding:8px 12px;border-radius:8px;margin-top:8px;
+    display:none;line-height:1.6;
+  }
+  .trial-banner.show{display:block;}
+  main{flex:1;padding:16px 16px 120px;}
+  nav{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:100%;max-width:520px;
+    display:flex;background:#fff;border-top:1px solid var(--line);
+    z-index:20;
+  }
+  nav button{
+    flex:1;padding:12px 4px 14px;border:none;background:none;
+    font-family:inherit;font-size:12px;font-weight:700;color:var(--gray);
+    cursor:pointer;
+  }
+  nav button .ic{display:block;font-size:20px;margin-bottom:2px;}
+  nav button.active{color:var(--blue);}
+  nav button:focus-visible{outline:3px solid var(--blue);outline-offset:-3px;}
+  .section-label{
+    font-size:12px;font-weight:800;color:var(--blue);
+    letter-spacing:.1em;margin:16px 4px 6px;
+  }
+  ul.checklist{list-style:none;}
+  ul.checklist li{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    margin-bottom:8px;display:flex;align-items:center;
+    overflow:hidden;
+  }
+  ul.checklist li.checked{background:var(--done);border-color:#BBD6BB;}
+  ul.checklist li label{
+    flex:1;display:flex;align-items:center;gap:12px;
+    padding:14px;cursor:pointer;font-size:16px;font-weight:600;
+  }
+  ul.checklist li.checked label{color:#4A6B4A;text-decoration:line-through;text-decoration-thickness:2px;}
+  input[type=checkbox]{
+    width:24px;height:24px;accent-color:var(--blue);flex-shrink:0;
+  }
+  input[type=checkbox]:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
+  .empty{
+    text-align:center;color:var(--gray);padding:32px 12px;font-size:14px;line-height:1.7;
+  }
+  .progress-wrap{
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:14px;margin-bottom:4px;display:flex;align-items:center;gap:14px;
+  }
+  .bar{flex:1;height:10px;background:var(--line);border-radius:5px;overflow:hidden;}
+  .bar>div{height:100%;background:var(--blue);width:0%;transition:width .3s ease;}
+  .pct{font-size:14px;font-weight:800;color:var(--blue);min-width:74px;text-align:right;}
+  .stamp{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    pointer-events:none;z-index:50;
+  }
+  .stamp.show{display:flex;}
+  .stamp .seal{
+    width:170px;height:170px;border:6px solid var(--red);border-radius:50%;
+    color:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-weight:900;background:rgba(250,250,247,.92);
+    transform:rotate(-12deg) scale(1);
+    box-shadow:0 4px 24px rgba(200,50,43,.25);
+    animation:stampIn .45s cubic-bezier(.2,1.6,.4,1);
+  }
+  .stamp .seal .big{font-size:44px;letter-spacing:.05em;}
+  .stamp .seal .small{font-size:14px;margin-top:4px;letter-spacing:.2em;}
+  @keyframes stampIn{
+    0%{transform:rotate(-12deg) scale(2.4);opacity:0;}
+    100%{transform:rotate(-12deg) scale(1);opacity:1;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .stamp .seal{animation:none;}
+    .bar>div{transition:none;}
+  }
+  .sub-item{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;
+  }
+  .sub-item .info{flex:1;}
+  .sub-item .name{font-size:16px;font-weight:700;}
+  .sub-item .due{font-size:12px;color:var(--gray);margin-top:2px;}
+  .sub-item .due.soon{color:var(--red);font-weight:800;}
+  .sub-item.done{opacity:.5;}
+  .sub-item.done .name{text-decoration:line-through;}
+  .del-btn{
+    border:none;background:none;color:var(--gray);font-size:18px;cursor:pointer;
+    padding:6px;border-radius:6px;
+  }
+  .del-btn:focus-visible{outline:3px solid var(--blue);}
+  form.add-form{
+    display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;
+  }
+  form.add-form input[type=text]{
+    flex:2;min-width:140px;padding:12px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:15px;background:#fff;
+  }
+  form.add-form input[type=date]{
+    flex:1;min-width:120px;padding:11px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:14px;background:#fff;
+  }
+  form.add-form button{
+    padding:12px 18px;border:none;border-radius:10px;background:var(--blue);color:#fff;
+    font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;
+  }
+  form.add-form button:focus-visible,form.add-form input:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
+  .day-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .day-tabs button{
+    padding:8px 12px;border:1px solid var(--line);border-radius:20px;background:#fff;
+    font-family:inherit;font-size:14px;font-weight:700;color:var(--gray);cursor:pointer;
+  }
+  .day-tabs button.sel{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .day-tabs button:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
+  .item-row{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    margin-bottom:6px;padding:10px 14px;display:flex;align-items:center;
+    font-size:15px;font-weight:600;
+  }
+  .item-row span{flex:1;}
+  .stats{display:flex;gap:10px;margin-bottom:16px;}
+  .stat-card{
+    flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:16px 10px;text-align:center;
+  }
+  .stat-card .num{font-size:34px;font-weight:900;color:var(--blue);line-height:1.1;}
+  .stat-card.red .num{color:var(--red);}
+  .stat-card .lbl{font-size:12px;color:var(--gray);font-weight:700;margin-top:4px;}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal .dow{font-size:11px;text-align:center;color:var(--gray);font-weight:700;padding:4px 0;}
+  .cal .day{
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:600;border-radius:8px;background:#fff;border:1px solid var(--line);
+    color:var(--gray);position:relative;
+  }
+  .cal .day.done{background:#fff;border-color:var(--red);color:var(--red);font-weight:900;}
+  .cal .day.done::after{
+    content:"";position:absolute;inset:3px;border:2px solid var(--red);border-radius:50%;opacity:.7;
+  }
+  .cal .day.today{outline:2px solid var(--blue);}
+  .cal .day.blank{background:none;border:none;}
+  .note{font-size:12px;color:var(--gray);margin-top:14px;line-height:1.7;}
+  .hidden{display:none;}
+  /* backup */
+  .backup-box{
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:14px;margin-top:20px;
+  }
+  .backup-box h3{font-size:14px;color:var(--blue);margin-bottom:10px;}
+  .backup-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .backup-btns button{
+    padding:10px 14px;border:1px solid var(--blue);border-radius:10px;background:#fff;
+    color:var(--blue);font-family:inherit;font-size:14px;font-weight:800;cursor:pointer;
+  }
+  .backup-btns button.primary{background:var(--blue);color:#fff;}
+  .backup-btns button:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
+  #restoreArea{
+    width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:10px;
+    font-family:monospace;font-size:12px;min-height:80px;background:#FBFBF9;
+  }
+  .backup-msg{font-size:13px;font-weight:700;margin-top:8px;min-height:18px;}
+  .backup-msg.ok{color:#2E7D32;}
+  .backup-msg.err{color:var(--red);}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">わすれものゼロ</div>
+  <h1 id="pageTitle">あすの準備<span class="date" id="dateLabel"></span></h1>
+  <div class="trial-banner" id="trialBanner">⚠ お試しモードで動いています(この画面ではデータが保存されません)。スマホのブラウザで開くと自動で保存されるようになります。</div>
+</header>
+
+<main>
+  <!-- チェックタブ -->
+  <section id="tab-check">
+    <div class="progress-wrap">
+      <div class="bar"><div id="progBar"></div></div>
+      <div class="pct" id="progPct">0 / 0</div>
+    </div>
+    <div class="section-label">まいにちの持ち物</div>
+    <ul class="checklist" id="dailyList"></ul>
+    <div class="section-label" id="dowLabel">この曜日の持ち物</div>
+    <ul class="checklist" id="dowList"></ul>
+    <div class="section-label">あす締切の提出物</div>
+    <ul class="checklist" id="subDueList"></ul>
+  </section>
+
+  <!-- 提出物タブ -->
+  <section id="tab-subs" class="hidden">
+    <div class="section-label">提出物リスト(締切順)</div>
+    <div id="subList"></div>
+    <form class="add-form" id="subForm">
+      <input type="text" id="subName" placeholder="例:数学ワーク P20まで" maxlength="40" required>
+      <input type="date" id="subDue" required>
+      <button type="submit">追加</button>
+    </form>
+    <p class="note">もらった瞬間にここへ入れるのがルール。締切前日になると「あすの準備」に自動で出てきます。</p>
+  </section>
+
+  <!-- 設定タブ -->
+  <section id="tab-settings" class="hidden">
+    <div class="section-label">まいにちの持ち物</div>
+    <div id="editDaily"></div>
+    <form class="add-form" id="dailyForm">
+      <input type="text" id="dailyName" placeholder="例:筆箱" maxlength="30" required>
+      <button type="submit">追加</button>
+    </form>
+    <div class="section-label" style="margin-top:24px">曜日ごとの持ち物</div>
+    <div class="day-tabs" id="dayTabs"></div>
+    <div id="editDow"></div>
+    <form class="add-form" id="dowForm">
+      <input type="text" id="dowName" placeholder="例:体操着" maxlength="30" required>
+      <button type="submit">追加</button>
+    </form>
+    <p class="note">時間割が変わったらここを直すだけ。教科書・ノートは「月曜セット」のようにまとめて登録してもOK。</p>
+  </section>
+
+  <!-- きろくタブ -->
+  <section id="tab-record" class="hidden">
+    <div class="stats">
+      <div class="stat-card red"><div class="num" id="statStreak">0</div><div class="lbl">れんぞく日数</div></div>
+      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">ぜんぶ完了した日</div></div>
+    </div>
+    <div class="section-label" id="calLabel">今月のきろく</div>
+    <div class="cal" id="calGrid"></div>
+    <p class="note">全部チェックできた日に赤いはんこがつきます。土日はれんぞく日数にカウントしません。</p>
+
+    <div class="backup-box">
+      <h3>💾 バックアップと復元</h3>
+      <div class="backup-btns">
+        <button type="button" id="btnBackup" class="primary">バックアップをコピー</button>
+        <button type="button" id="btnRestore">貼り付けたデータを復元</button>
+      </div>
+      <textarea id="restoreArea" placeholder="復元するときは、ここにバックアップの文字列を貼り付けてから「復元」を押してね"></textarea>
+      <div class="backup-msg" id="backupMsg"></div>
+      <p class="note">月1回くらい、コピーした文字列を家族LINEやメモアプリに貼っておくと安心。</p>
+    </div>
+  </section>
+</main>
+
+<div id="diagBar" style="position:fixed;bottom:64px;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:#F0F2F7;border-top:1px solid var(--line);font-size:11px;color:#5A6070;padding:6px 12px;line-height:1.5;z-index:19;font-family:monospace;"></div>
+
+<div class="stamp" id="stamp" aria-hidden="true">
+  <div class="seal"><div class="big">よし!</div><div class="small">準備完了</div></div>
+</div>
+
+<nav>
+  <button data-tab="check" class="active"><span class="ic">✅</span>あす準備</button>
+  <button data-tab="subs"><span class="ic">📄</span>提出物</button>
+  <button data-tab="settings"><span class="ic">🎒</span>持ち物設定</button>
+  <button data-tab="record"><span class="ic">🏆</span>きろく</button>
+</nav>
+
+<script>
+(function(){
+  const DOW = ["日","月","火","水","木","金","土"];
+  const KEY = "junbi-check-v1";
+  let data = null;
+  let selDay = 1;
+  let stampShownFor = null;
+
+  const defaults = {
+    daily: ["筆箱","連絡帳(手帳)","水筒"],
+    weekly: {1:[],2:[],3:[],4:[],5:[],6:[],0:[]},
+    subs: [],
+    checks: {},
+    log: {}
+  };
+
+  // ---------- storage adapter: localStorage → 使えなければメモリ ----------
+  let mem = {};
+  let persistent = false;
+  try{
+    const t="__t__"+Date.now();
+    localStorage.setItem(t,"1");
+    localStorage.removeItem(t);
+    persistent = true;
+  }catch(e){ persistent = false; }
+  if(!persistent){
+    document.getElementById("trialBanner").classList.add("show");
+  }
+  function storeGet(k){
+    if(persistent){ try{ return localStorage.getItem(k); }catch(e){ return mem[k]||null; } }
+    return mem[k]||null;
+  }
+  function storeSet(k,v){
+    if(persistent){ try{ localStorage.setItem(k,v); return; }catch(e){} }
+    mem[k]=v;
+  }
+
+  function targetDate(){
+    const now = new Date();
+    const d = new Date(now);
+    if(now.getHours() >= 15) d.setDate(d.getDate()+1);
+    return d;
+  }
+  function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+
+  // ---------- 診断表示 ----------
+  const diag = { origin:"", loaded:"", lastSave:"" };
+  function renderDiag(){
+    const el=document.getElementById("diagBar");
+    if(!el) return;
+    el.innerHTML = "🔍 " + diag.origin + " | 読込: " + diag.loaded + " | 保存: " + (diag.lastSave||"まだ");
+  }
+  function initDiagOrigin(){
+    let o;
+    try{ o = location.origin; }catch(e){ o = "不明"; }
+    if(location.protocol==="file:"){
+      diag.origin = "⚠ファイル直接(" + decodeURIComponent(location.pathname.split("/").pop()) + ")";
+    }else if(o==="null" || o==="" || !o){
+      diag.origin = "❌保存不可の開き方(プレビュー画面)";
+    }else{
+      diag.origin = o.replace(/^https?:\/\//,"");
+    }
+    if(!persistent) diag.origin += " [お試しモード]";
+  }
+
+  function load(){
+    try{
+      const r = storeGet(KEY);
+      if(r){
+        data = JSON.parse(r);
+        diag.loaded = "✓前回データあり(" + (r.length/1024).toFixed(1) + "KB)";
+      }else{
+        data = JSON.parse(JSON.stringify(defaults));
+        diag.loaded = "✗前回データなし(初期状態)";
+      }
+    }catch(e){
+      data = JSON.parse(JSON.stringify(defaults));
+      diag.loaded = "✗読込エラー";
+    }
+    for(const k in defaults) if(data[k]===undefined) data[k]=JSON.parse(JSON.stringify(defaults[k]));
+  }
+  function save(){
+    const payload = JSON.stringify(data);
+    storeSet(KEY, payload);
+    // 書き込み直後に読み戻して検証
+    let ok=false;
+    try{ ok = (storeGet(KEY)===payload); }catch(e){ ok=false; }
+    const t=new Date();
+    const hh=String(t.getHours()).padStart(2,"0"), mm=String(t.getMinutes()).padStart(2,"0"), ss=String(t.getSeconds()).padStart(2,"0");
+    diag.lastSave = (ok?"✓":"❌失敗 ") + hh+":"+mm+":"+ss;
+    renderDiag();
+  }
+
+  function itemsForDate(d){
+    const dow = d.getDay();
+    const list = [];
+    data.daily.forEach((n,i)=>list.push({key:"d"+i, name:n, group:"daily"}));
+    (data.weekly[dow]||[]).forEach((n,i)=>list.push({key:"w"+dow+"-"+i, name:n, group:"dow"}));
+    const dIso = iso(d);
+    data.subs.filter(s=>!s.done && s.due <= dIso).forEach(s=>list.push({key:"s"+s.id, name:s.name+"(提出)", group:"sub"}));
+    return list;
+  }
+
+  function renderCheck(){
+    const d = targetDate();
+    const dIso = iso(d);
+    document.getElementById("dateLabel").textContent = (d.getMonth()+1)+"/"+d.getDate()+"("+DOW[d.getDay()]+")";
+    document.getElementById("dowLabel").textContent = DOW[d.getDay()]+"曜日の持ち物";
+    const checks = data.checks[dIso] || {};
+    const items = itemsForDate(d);
+    const groups = {daily:[], dow:[], sub:[]};
+    items.forEach(it=>groups[it.group].push(it));
+
+    function fill(ulId, arr, emptyMsg){
+      const ul = document.getElementById(ulId);
+      ul.innerHTML = "";
+      if(arr.length===0){
+        const li=document.createElement("li");
+        li.style.cssText="border:none;background:none;";
+        li.innerHTML='<div class="empty">'+emptyMsg+'</div>';
+        ul.appendChild(li);
+        return;
+      }
+      arr.forEach(it=>{
+        const li=document.createElement("li");
+        const on = !!checks[it.key];
+        if(on) li.classList.add("checked");
+        const label=document.createElement("label");
+        const cb=document.createElement("input");
+        cb.type="checkbox"; cb.checked=on;
+        cb.addEventListener("change",()=>{
+          if(!data.checks[dIso]) data.checks[dIso]={};
+          if(cb.checked) data.checks[dIso][it.key]=true;
+          else delete data.checks[dIso][it.key];
+          updateCompletion(dIso, items);
+          save();
+          renderCheck();
+        });
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(it.name));
+        li.appendChild(label);
+        ul.appendChild(li);
+      });
+    }
+    fill("dailyList", groups.daily, "設定タブから追加してね");
+    fill("dowList", groups.dow, "この曜日の特別な持ち物はなし");
+    fill("subDueList", groups.sub, "締切がせまった提出物はなし 👍");
+
+    const done = items.filter(it=>checks[it.key]).length;
+    const total = items.length;
+    document.getElementById("progPct").textContent = done+" / "+total;
+    document.getElementById("progBar").style.width = total? (done/total*100)+"%" : "0%";
+  }
+
+  function updateCompletion(dIso, items){
+    const checks = data.checks[dIso]||{};
+    const all = items.length>0 && items.every(it=>checks[it.key]);
+    if(all){
+      if(!data.log[dIso]){
+        data.log[dIso]=true;
+        items.filter(it=>it.key.startsWith("s")).forEach(it=>{
+          const id = it.key.slice(1);
+          const s = data.subs.find(x=>String(x.id)===id);
+          if(s) s.done=true;
+        });
+        showStamp(dIso);
+      }
+    }else{
+      delete data.log[dIso];
+    }
+  }
+
+  function showStamp(dIso){
+    if(stampShownFor===dIso) return;
+    stampShownFor=dIso;
+    const el=document.getElementById("stamp");
+    el.classList.add("show");
+    setTimeout(()=>el.classList.remove("show"), 1800);
+  }
+
+  function renderSubs(){
+    const wrap=document.getElementById("subList");
+    wrap.innerHTML="";
+    const todayIso = iso(new Date());
+    const sorted=[...data.subs].sort((a,b)=> (a.done-b.done) || a.due.localeCompare(b.due));
+    if(sorted.length===0){
+      wrap.innerHTML='<div class="empty">まだ登録なし。<br>プリントをもらったらすぐ追加!</div>';
+    }
+    sorted.forEach(s=>{
+      const div=document.createElement("div");
+      div.className="sub-item"+(s.done?" done":"");
+      const soon = !s.done && s.due <= todayIso;
+      const dd = new Date(s.due+"T00:00:00");
+      div.innerHTML='<div class="info"><div class="name"></div>'+
+        '<div class="due'+(soon?" soon":"")+'">締切 '+(dd.getMonth()+1)+"/"+dd.getDate()+"("+DOW[dd.getDay()]+")"+(s.done?" ✔ 提出済み":(soon?" ⚠ 今日/期限切れ":""))+'</div></div>';
+      div.querySelector(".name").textContent=s.name;
+      const del=document.createElement("button");
+      del.className="del-btn"; del.textContent="🗑"; del.setAttribute("aria-label","削除");
+      del.addEventListener("click",()=>{
+        data.subs=data.subs.filter(x=>x.id!==s.id); save(); renderSubs(); renderCheck();
+      });
+      div.appendChild(del);
+      wrap.appendChild(div);
+    });
+  }
+  document.getElementById("subForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const name=document.getElementById("subName").value.trim();
+    const due=document.getElementById("subDue").value;
+    if(!name||!due) return;
+    data.subs.push({id:Date.now(), name, due, done:false});
+    document.getElementById("subName").value="";
+    document.getElementById("subDue").value="";
+    save(); renderSubs(); renderCheck();
+  });
+
+  function renderSettings(){
+    const ed=document.getElementById("editDaily");
+    ed.innerHTML="";
+    data.daily.forEach((n,i)=>{
+      ed.appendChild(rowEl(n, ()=>{ data.daily.splice(i,1); save(); renderSettings(); renderCheck(); }));
+    });
+    const tabs=document.getElementById("dayTabs");
+    tabs.innerHTML="";
+    [1,2,3,4,5,6,0].forEach(d=>{
+      const b=document.createElement("button");
+      b.textContent=DOW[d]; if(d===selDay) b.classList.add("sel");
+      b.addEventListener("click",()=>{ selDay=d; renderSettings(); });
+      tabs.appendChild(b);
+    });
+    const ew=document.getElementById("editDow");
+    ew.innerHTML="";
+    const arr=data.weekly[selDay]||[];
+    if(arr.length===0) ew.innerHTML='<div class="empty">'+DOW[selDay]+'曜日の持ち物はまだなし</div>';
+    arr.forEach((n,i)=>{
+      ew.appendChild(rowEl(n, ()=>{ arr.splice(i,1); save(); renderSettings(); renderCheck(); }));
+    });
+  }
+  function rowEl(name, onDel){
+    const div=document.createElement("div");
+    div.className="item-row";
+    const sp=document.createElement("span"); sp.textContent=name;
+    const del=document.createElement("button");
+    del.className="del-btn"; del.textContent="🗑"; del.setAttribute("aria-label","削除");
+    del.addEventListener("click",onDel);
+    div.appendChild(sp); div.appendChild(del);
+    return div;
+  }
+  document.getElementById("dailyForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const v=document.getElementById("dailyName").value.trim();
+    if(!v) return;
+    data.daily.push(v);
+    document.getElementById("dailyName").value="";
+    save(); renderSettings(); renderCheck();
+  });
+  document.getElementById("dowForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const v=document.getElementById("dowName").value.trim();
+    if(!v) return;
+    if(!data.weekly[selDay]) data.weekly[selDay]=[];
+    data.weekly[selDay].push(v);
+    document.getElementById("dowName").value="";
+    save(); renderSettings(); renderCheck();
+  });
+
+  function calcStreak(){
+    let streak=0;
+    let d=targetDate();
+    if(!data.log[iso(d)]) d.setDate(d.getDate()-1);
+    while(true){
+      const dow=d.getDay();
+      if(dow===0||dow===6){ d.setDate(d.getDate()-1); continue; }
+      if(data.log[iso(d)]){ streak++; d.setDate(d.getDate()-1); }
+      else break;
+      if(streak>999) break;
+    }
+    return streak;
+  }
+  function renderRecord(){
+    document.getElementById("statStreak").textContent=calcStreak();
+    document.getElementById("statTotal").textContent=Object.keys(data.log).length;
+    const now=new Date();
+    const y=now.getFullYear(), m=now.getMonth();
+    document.getElementById("calLabel").textContent=(m+1)+"月のきろく";
+    const grid=document.getElementById("calGrid");
+    grid.innerHTML="";
+    DOW.forEach(d=>{
+      const el=document.createElement("div"); el.className="dow"; el.textContent=d; grid.appendChild(el);
+    });
+    const first=new Date(y,m,1);
+    for(let i=0;i<first.getDay();i++){
+      const b=document.createElement("div"); b.className="day blank"; grid.appendChild(b);
+    }
+    const days=new Date(y,m+1,0).getDate();
+    const todayIso=iso(now);
+    for(let dd=1;dd<=days;dd++){
+      const el=document.createElement("div");
+      el.className="day";
+      const dIso=iso(new Date(y,m,dd));
+      if(data.log[dIso]) el.classList.add("done");
+      if(dIso===todayIso) el.classList.add("today");
+      el.textContent=dd;
+      grid.appendChild(el);
+    }
+  }
+
+  // ---------- バックアップ / 復元 ----------
+  const msgEl=document.getElementById("backupMsg");
+  function msg(t, ok){
+    msgEl.textContent=t;
+    msgEl.className="backup-msg "+(ok?"ok":"err");
+    setTimeout(()=>{ msgEl.textContent=""; }, 4000);
+  }
+  document.getElementById("btnBackup").addEventListener("click", async ()=>{
+    const payload = "JUNBI1:" + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    try{
+      await navigator.clipboard.writeText(payload);
+      msg("コピーしました!LINEやメモに貼っておこう", true);
+    }catch(e){
+      const ta=document.getElementById("restoreArea");
+      ta.value=payload;
+      ta.select();
+      msg("下の欄に出しました。長押しでコピーしてね", true);
+    }
+  });
+  document.getElementById("btnRestore").addEventListener("click", ()=>{
+    const raw=document.getElementById("restoreArea").value.trim();
+    if(!raw){ msg("復元するデータを貼り付けてね", false); return; }
+    try{
+      const b64 = raw.startsWith("JUNBI1:") ? raw.slice(7) : raw;
+      const restored = JSON.parse(decodeURIComponent(escape(atob(b64))));
+      if(!restored.daily || !restored.weekly) throw new Error("bad");
+      if(!confirm("今のデータを上書きして復元します。よろしいですか?")) return;
+      data = restored;
+      for(const k in defaults) if(data[k]===undefined) data[k]=JSON.parse(JSON.stringify(defaults[k]));
+      save();
+      document.getElementById("restoreArea").value="";
+      renderCheck(); renderSubs(); renderSettings(); renderRecord();
+      msg("復元できました!", true);
+    }catch(e){
+      msg("データの形式が違うみたい。コピーし直してみてね", false);
+    }
+  });
+
+  // ---------- タブ切替 ----------
+  const titles={check:"あすの準備",subs:"提出物リスト",settings:"持ち物の設定",record:"がんばりのきろく"};
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.addEventListener("click",()=>{
+      document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      const t=b.dataset.tab;
+      ["check","subs","settings","record"].forEach(k=>{
+        document.getElementById("tab-"+k).classList.toggle("hidden", k!==t);
+      });
+      document.getElementById("pageTitle").childNodes[0].textContent=titles[t];
+      document.getElementById("dateLabel").style.display = t==="check" ? "inline" : "none";
+      if(t==="check") renderCheck();
+      if(t==="subs") renderSubs();
+      if(t==="settings") renderSettings();
+      if(t==="record") renderRecord();
+    });
+  });
+
+  // ---------- init ----------
+  initDiagOrigin();
+  load();
+  renderDiag();
+  renderCheck(); renderSubs(); renderSettings(); renderRecord();
+})();
+</script>
+</body>
+</html>
