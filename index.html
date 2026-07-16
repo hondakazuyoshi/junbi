@@ -224,6 +224,78 @@
   .fortune .f-rank{font-size:16px;font-weight:900;color:var(--red);letter-spacing:.1em;}
   .fortune .f-msg{font-size:13px;font-weight:700;margin-top:4px;line-height:1.5;}
   .fortune .f-lucky{font-size:12px;color:#8A6410;font-weight:700;margin-top:4px;}
+  /* photos */
+  .photo-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;
+  }
+  .photo-grid .ph{
+    position:relative;aspect-ratio:3/4;border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;background:#fff;cursor:pointer;padding:0;
+  }
+  .photo-grid .ph img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-grid .ph .cap{
+    position:absolute;left:0;right:0;bottom:0;background:rgba(27,31,42,.72);color:#fff;
+    font-size:10px;font-weight:700;padding:3px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .photo-grid .ph:focus-visible{outline:3px solid var(--blue);outline-offset:2px;}
+  .photo-btn{
+    padding:12px 18px;border-radius:10px;background:var(--blue);color:#fff;
+    font-size:15px;font-weight:800;cursor:pointer;display:inline-block;
+  }
+  .photo-viewer{
+    position:fixed;inset:0;background:rgba(20,22,30,.95);z-index:60;display:none;
+    flex-direction:column;
+  }
+  .photo-viewer.show{display:flex;}
+  .photo-viewer .pv-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 16px;color:#fff;font-size:14px;font-weight:700;
+  }
+  .photo-viewer .pv-bar button{
+    border:1px solid rgba(255,255,255,.4);background:none;color:#fff;
+    font-family:inherit;font-size:13px;font-weight:800;border-radius:8px;
+    padding:8px 12px;margin-left:8px;cursor:pointer;
+  }
+  .photo-viewer img{
+    flex:1;object-fit:contain;min-height:0;width:100%;
+  }
+  /* test */
+  .test-box{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;
+  }
+  .test-box input[type=text]{
+    width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:15px;font-weight:700;
+  }
+  .test-dates{display:flex;gap:10px;margin-top:10px;}
+  .test-dates label{
+    flex:1;font-size:12px;font-weight:800;color:var(--gray);display:block;
+  }
+  .test-dates input{
+    width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:14px;
+  }
+  .test-countdown{
+    margin-top:10px;font-size:15px;font-weight:900;color:var(--red);min-height:20px;
+  }
+  .test-banner{
+    background:#FDEDED;border:1px solid #E8B8B4;color:var(--red);
+    border-radius:10px;padding:8px 12px;margin-bottom:8px;
+    font-size:13px;font-weight:900;
+  }
+  .scope-row{
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:10px 14px;margin-bottom:8px;
+  }
+  .scope-row .subj{
+    font-size:14px;font-weight:900;color:var(--blue);margin-bottom:6px;
+  }
+  .scope-row textarea{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    font-family:inherit;font-size:14px;line-height:1.6;resize:vertical;min-height:44px;
+    background:#FBFBF9;
+  }
+  .scope-row textarea:focus-visible,.test-box input:focus-visible{outline:3px solid var(--blue);outline-offset:1px;}
   /* backup */
   .backup-box{
     background:#fff;border:1px solid var(--line);border-radius:12px;
@@ -270,6 +342,7 @@
       <span class="w-rain" id="wRain"></span>
     </div>
     <div class="w-hint hidden" id="wHint"></div>
+    <div class="test-banner hidden" id="testBanner"></div>
     <div class="fortune" id="fortuneCard">
       <div class="f-head">
         <span class="f-sign">♒ みずがめ座</span>
@@ -300,6 +373,15 @@
       <button type="submit">追加</button>
     </form>
     <p class="note">もらった瞬間にここへ入れるのがルール。締切前日になると「あすの準備」に自動で出てきます。</p>
+
+    <div class="section-label" style="margin-top:24px">📷 プリント写真</div>
+    <div class="photo-grid" id="photoGrid"></div>
+    <form class="add-form" id="photoForm">
+      <input type="text" id="photoName" placeholder="メモ(例:遠足のお知らせ)" maxlength="30">
+      <label class="photo-btn" for="photoFile">📷 撮影/選択</label>
+      <input type="file" id="photoFile" accept="image/*" capture="environment" style="display:none">
+    </form>
+    <p class="note">プリントをもらったらパシャ。原本をなくしても画面で確認できます。写真はこの端末の中だけに保存され、バックアップ文字列には含まれません。</p>
   </section>
 
   <!-- 設定タブ -->
@@ -318,6 +400,27 @@
       <button type="submit">追加</button>
     </form>
     <p class="note">時間割が変わったらここを直すだけ。教科書・ノートは「月曜セット」のようにまとめて登録してもOK。</p>
+  </section>
+
+  <!-- テストタブ -->
+  <section id="tab-test" class="hidden">
+    <div class="section-label">テストの日程</div>
+    <div class="test-box">
+      <input type="text" id="testName" placeholder="テスト名(例:2学期中間テスト)" maxlength="20">
+      <div class="test-dates">
+        <label>開始日<input type="date" id="testStart"></label>
+        <label>終了日<input type="date" id="testEnd"></label>
+      </div>
+      <div class="test-countdown" id="testCountdown2"></div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">テスト範囲(教科ごとにメモ)</div>
+    <div id="scopeList"></div>
+
+    <div class="backup-btns" style="margin-top:16px">
+      <button type="button" id="testReset">テスト終了(内容をクリア)</button>
+    </div>
+    <p class="note">範囲発表のプリントは「提出物」タブの📷プリント写真に撮っておくと、あとで見返せて便利。</p>
   </section>
 
   <!-- きろくタブ -->
@@ -343,6 +446,17 @@
   </section>
 </main>
 
+<div class="photo-viewer" id="photoViewer">
+  <div class="pv-bar">
+    <span id="pvName"></span>
+    <span>
+      <button type="button" id="pvDelete">🗑 削除</button>
+      <button type="button" id="pvClose">✕ 閉じる</button>
+    </span>
+  </div>
+  <img id="pvImg" alt="プリント写真">
+</div>
+
 <div class="stamp" id="stamp" aria-hidden="true">
   <div class="seal"><div class="big">よし!</div><div class="small">準備完了</div></div>
 </div>
@@ -350,7 +464,8 @@
 <nav>
   <button data-tab="check" class="active"><span class="ic">✅</span>あす準備</button>
   <button data-tab="subs"><span class="ic">📄</span>提出物</button>
-  <button data-tab="settings"><span class="ic">🎒</span>持ち物設定</button>
+  <button data-tab="test"><span class="ic">📝</span>テスト</button>
+  <button data-tab="settings"><span class="ic">🎒</span>持ち物</button>
   <button data-tab="record"><span class="ic">🏆</span>きろく</button>
 </nav>
 
@@ -367,7 +482,8 @@
     weekly: {1:[],2:[],3:[],4:[],5:[],6:[],0:[]},
     subs: [],
     checks: {},
-    log: {}
+    log: {},
+    test: {name:"", start:"", end:"", scopes:{}}
   };
 
   // ---------- storage adapter: localStorage → 使えなければメモリ ----------
@@ -413,6 +529,199 @@
   document.getElementById("navPrev").addEventListener("click",()=>shiftView(-1));
   document.getElementById("navNext").addEventListener("click",()=>shiftView(1));
   document.getElementById("navReset").addEventListener("click",()=>{ viewDate=null; renderCheck(); });
+
+  // ---------- プリント写真(IndexedDB保存) ----------
+  let photoDb = null;
+  function openPhotoDb(){
+    return new Promise((res)=>{
+      if(photoDb){ res(photoDb); return; }
+      try{
+        const req = indexedDB.open("junbi-photos", 1);
+        req.onupgradeneeded = ()=>{ req.result.createObjectStore("photos", {keyPath:"id"}); };
+        req.onsuccess = ()=>{ photoDb = req.result; res(photoDb); };
+        req.onerror = ()=>res(null);
+      }catch(e){ res(null); }
+    });
+  }
+  function photoTx(mode){ return photoDb.transaction("photos", mode).objectStore("photos"); }
+  function listPhotos(){
+    return openPhotoDb().then(db=>{
+      if(!db) return [];
+      return new Promise(res=>{
+        const out=[];
+        const cur = photoTx("readonly").openCursor();
+        cur.onsuccess = ()=>{
+          const c=cur.result;
+          if(c){ out.push(c.value); c.continue(); }
+          else res(out.sort((a,b)=>b.id-a.id));
+        };
+        cur.onerror = ()=>res(out);
+      });
+    });
+  }
+  function putPhoto(rec){
+    return openPhotoDb().then(db=>{
+      if(!db) return false;
+      return new Promise(res=>{
+        const r = photoTx("readwrite").put(rec);
+        r.onsuccess=()=>res(true); r.onerror=()=>res(false);
+      });
+    });
+  }
+  function deletePhoto(id){
+    return openPhotoDb().then(db=>{
+      if(!db) return false;
+      return new Promise(res=>{
+        const r = photoTx("readwrite").delete(id);
+        r.onsuccess=()=>res(true); r.onerror=()=>res(false);
+      });
+    });
+  }
+  // 画像を縮小してデータ化(最大1400px・JPEG)
+  function compressImage(file){
+    return new Promise((res,rej)=>{
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = ()=>{
+        const MAX = 1400;
+        let w=img.width, h=img.height;
+        if(Math.max(w,h)>MAX){
+          const s = MAX/Math.max(w,h);
+          w=Math.round(w*s); h=Math.round(h*s);
+        }
+        const cv=document.createElement("canvas");
+        cv.width=w; cv.height=h;
+        cv.getContext("2d").drawImage(img,0,0,w,h);
+        URL.revokeObjectURL(url);
+        res(cv.toDataURL("image/jpeg",0.72));
+      };
+      img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error("img")); };
+      img.src = url;
+    });
+  }
+  function renderPhotos(){
+    const grid=document.getElementById("photoGrid");
+    listPhotos().then(list=>{
+      grid.innerHTML="";
+      if(list.length===0){
+        grid.innerHTML='<div class="empty" style="grid-column:1/-1">まだ写真なし。<br>「📷 撮影/選択」からどうぞ</div>';
+        return;
+      }
+      list.forEach(p=>{
+        const btn=document.createElement("button");
+        btn.type="button"; btn.className="ph";
+        const im=document.createElement("img");
+        im.src=p.dataUrl; im.alt=p.name||"プリント";
+        btn.appendChild(im);
+        const cap=document.createElement("div");
+        cap.className="cap";
+        const dd=new Date(p.id);
+        cap.textContent=(p.name||"プリント")+" "+(dd.getMonth()+1)+"/"+dd.getDate();
+        btn.appendChild(cap);
+        btn.addEventListener("click",()=>openViewer(p));
+        grid.appendChild(btn);
+      });
+    });
+  }
+  let viewingPhoto=null;
+  function openViewer(p){
+    viewingPhoto=p;
+    document.getElementById("pvImg").src=p.dataUrl;
+    document.getElementById("pvName").textContent=p.name||"プリント";
+    document.getElementById("photoViewer").classList.add("show");
+  }
+  document.getElementById("pvClose").addEventListener("click",()=>{
+    document.getElementById("photoViewer").classList.remove("show");
+    document.getElementById("pvImg").src="";
+    viewingPhoto=null;
+  });
+  document.getElementById("pvDelete").addEventListener("click",()=>{
+    if(!viewingPhoto) return;
+    if(!confirm("この写真を削除しますか?")) return;
+    deletePhoto(viewingPhoto.id).then(()=>{
+      document.getElementById("photoViewer").classList.remove("show");
+      viewingPhoto=null;
+      renderPhotos();
+    });
+  });
+  document.getElementById("photoFile").addEventListener("change",e=>{
+    const file=e.target.files && e.target.files[0];
+    e.target.value="";
+    if(!file) return;
+    compressImage(file).then(dataUrl=>{
+      const name=document.getElementById("photoName").value.trim();
+      return putPhoto({id:Date.now(), name, dataUrl}).then(ok=>{
+        if(ok){
+          document.getElementById("photoName").value="";
+          renderPhotos();
+        }else{
+          alert("保存できませんでした。端末の空き容量を確認してください。");
+        }
+      });
+    }).catch(()=>alert("画像を読み込めませんでした。別の写真で試してください。"));
+  });
+
+  // ---------- 定期テスト ----------
+  const SUBJECTS = ["国語","数学","英語","理科","社会","音楽","美術","保健体育","技術・家庭科"];
+  function testDaysLeft(){
+    // きょうから開始日まで(開始前:正、期間中:0、終了後:負)
+    if(!data.test || !data.test.start) return null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const start = new Date(data.test.start+"T00:00:00");
+    const end = new Date((data.test.end||data.test.start)+"T00:00:00");
+    if(today>end) return {phase:"after"};
+    if(today>=start) return {phase:"during"};
+    return {phase:"before", days: Math.round((start-today)/86400000)};
+  }
+  function countdownText(){
+    const t = testDaysLeft();
+    if(!t) return "";
+    const name = data.test.name || "テスト";
+    if(t.phase==="before") return "📝 "+name+"まで あと"+t.days+"日";
+    if(t.phase==="during") return "📝 "+name+" 期間中!がんばれ!";
+    return "";
+  }
+  function renderTestTab(){
+    document.getElementById("testName").value = data.test.name||"";
+    document.getElementById("testStart").value = data.test.start||"";
+    document.getElementById("testEnd").value = data.test.end||"";
+    document.getElementById("testCountdown2").textContent = countdownText();
+    const list=document.getElementById("scopeList");
+    list.innerHTML="";
+    SUBJECTS.forEach(s=>{
+      const row=document.createElement("div");
+      row.className="scope-row";
+      const h=document.createElement("div");
+      h.className="subj"; h.textContent=s;
+      row.appendChild(h);
+      const ta=document.createElement("textarea");
+      ta.placeholder="範囲をメモ(例:教科書P40〜62、ワークP20まで)";
+      ta.value = data.test.scopes[s]||"";
+      ta.addEventListener("input",()=>{
+        data.test.scopes[s]=ta.value;
+        save();
+      });
+      row.appendChild(ta);
+      list.appendChild(row);
+    });
+  }
+  ["testName","testStart","testEnd"].forEach(id=>{
+    document.getElementById(id).addEventListener("change",()=>{
+      data.test.name = document.getElementById("testName").value.trim();
+      data.test.start = document.getElementById("testStart").value;
+      data.test.end = document.getElementById("testEnd").value;
+      save();
+      document.getElementById("testCountdown2").textContent = countdownText();
+      renderCheck();
+    });
+  });
+  document.getElementById("testReset").addEventListener("click",()=>{
+    if(!confirm("テストの日程と範囲をすべてクリアします。よろしいですか?")) return;
+    data.test = {name:"", start:"", end:"", scopes:{}};
+    save();
+    renderTestTab();
+    renderCheck();
+  });
 
   // ---------- きょうの運勢(誕生日1/27・みずがめ座) ----------
   const BIRTH_SEED = "0127";
@@ -460,6 +769,46 @@
   const WEATHER_LAT = 35.6836;
   const WEATHER_LON = 139.5595;
   let weatherByDate = null; // {iso: {code,tmax,tmin,rain}}
+  let jmaPopByDate = null;  // {iso: 降水確率%(気象庁・東京地方)}
+
+  // 気象庁公式の降水確率(東京地方=130000)。地域を変える場合はこのコードを変更
+  const JMA_AREA = "130000";
+  function fetchJmaPop(){
+    fetch("https://www.jma.go.jp/bosai/forecast/data/forecast/"+JMA_AREA+".json")
+      .then(r=>r.json())
+      .then(j=>{
+        const map = {};
+        function pickArea(areas){
+          return areas.find(a=>a.area && a.area.name && a.area.name.indexOf("東京")>=0) || areas[0];
+        }
+        // 直近3日:6時間ごとの確率 → 日ごとの最大値
+        try{
+          const ts = j[0].timeSeries.find(t=>t.areas && t.areas[0] && t.areas[0].pops);
+          const ar = pickArea(ts.areas);
+          ts.timeDefines.forEach((td,i)=>{
+            const p = parseInt(ar.pops[i],10);
+            if(isNaN(p)) return;
+            const dIso = td.slice(0,10);
+            map[dIso] = Math.max(map[dIso]===undefined?-1:map[dIso], p);
+          });
+        }catch(e){}
+        // 週間予報:日ごとの確率(未取得の日だけ補完)
+        try{
+          const ts = j[1].timeSeries.find(t=>t.areas && t.areas[0] && t.areas[0].pops);
+          const ar = pickArea(ts.areas);
+          ts.timeDefines.forEach((td,i)=>{
+            const p = parseInt(ar.pops[i],10);
+            if(isNaN(p)) return;
+            const dIso = td.slice(0,10);
+            if(map[dIso]===undefined) map[dIso] = p;
+          });
+        }catch(e){}
+        jmaPopByDate = map;
+        renderWeather();
+      })
+      .catch(e=>{ /* 取得失敗時はOpen-Meteoの値を使用 */ });
+  }
+
   const WCODE = [
     [[0],"☀️","快晴"],
     [[1],"🌤","晴れ"],
@@ -502,13 +851,19 @@
     const w = weatherByDate[dIso];
     if(!w){ card.classList.add("hidden"); hint.classList.add("hidden"); return; }
     const info = wcodeInfo(w.code);
+    // 降水確率:気象庁の値を優先、なければOpen-Meteoの推定値
+    let rain = w.rain, official = false;
+    if(jmaPopByDate && jmaPopByDate[dIso]!==undefined){
+      rain = jmaPopByDate[dIso];
+      official = true;
+    }
     document.getElementById("wIcon").textContent = info.icon;
     document.getElementById("wLabel").textContent = info.label;
     document.getElementById("wTemp").textContent = w.tmax+"℃ / "+w.tmin+"℃";
-    document.getElementById("wRain").textContent = "☔"+(w.rain==null?"—":w.rain+"%");
+    document.getElementById("wRain").textContent = "☔"+(rain==null?"—":rain+"%"+(official?"":"?"));
     card.classList.remove("hidden");
-    if(w.rain!=null && w.rain>=50){
-      hint.textContent = "☔ 降水確率"+w.rain+"% — かさを忘れずに!";
+    if(rain!=null && rain>=50){
+      hint.textContent = "☔ 降水確率"+rain+"% — かさを忘れずに!";
       hint.classList.remove("hidden");
     }else{
       hint.classList.add("hidden");
@@ -554,6 +909,11 @@
     document.getElementById("navDate").innerHTML =
       (d.getMonth()+1)+"/"+d.getDate()+"("+DOW[d.getDay()]+")" + (rel? '<span class="rel">'+rel+'</span>':'');
     document.getElementById("navReset").classList.toggle("hidden", dIso===auto);
+    // テストカウントダウン
+    const tb=document.getElementById("testBanner");
+    const cd=countdownText();
+    if(cd){ tb.textContent=cd; tb.classList.remove("hidden"); }
+    else tb.classList.add("hidden");
     renderWeather();
     renderFortune();
     document.getElementById("dateLabel").textContent = (d.getMonth()+1)+"/"+d.getDate()+"("+DOW[d.getDay()]+")";
@@ -796,19 +1156,20 @@
   });
 
   // ---------- タブ切替 ----------
-  const titles={check:"あすの準備",subs:"提出物リスト",settings:"持ち物の設定",record:"がんばりのきろく"};
+  const titles={check:"あすの準備",subs:"提出物リスト",test:"定期テスト",settings:"持ち物の設定",record:"がんばりのきろく"};
   document.querySelectorAll("nav button").forEach(b=>{
     b.addEventListener("click",()=>{
       document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
       b.classList.add("active");
       const t=b.dataset.tab;
-      ["check","subs","settings","record"].forEach(k=>{
+      ["check","subs","test","settings","record"].forEach(k=>{
         document.getElementById("tab-"+k).classList.toggle("hidden", k!==t);
       });
       document.getElementById("pageTitle").childNodes[0].textContent=titles[t];
       document.getElementById("dateLabel").style.display = t==="check" ? "inline" : "none";
       if(t==="check") renderCheck();
-      if(t==="subs") renderSubs();
+      if(t==="subs"){ renderSubs(); renderPhotos(); }
+      if(t==="test") renderTestTab();
       if(t==="settings") renderSettings();
       if(t==="record") renderRecord();
     });
@@ -817,7 +1178,10 @@
   // ---------- init ----------
   load();
   renderCheck(); renderSubs(); renderSettings(); renderRecord();
+  renderTestTab();
+  renderPhotos();
   fetchWeather();
+  fetchJmaPop();
 })();
 </script>
 </body>
